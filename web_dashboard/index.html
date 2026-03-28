@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Label Disease Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-mesh"></div>
+
+    <header class="container reveal">
+        <div class="badge">Deep Learning Medical Analysis</div>
+        <h1>Multi-Label Disease Detection from Chest X-Rays</h1>
+        <p>A massive-scale Convolutional Neural Network trained organically on 112,000 high-resolution medical images natively on Apple Silicon to accurately classify 14 distinct pathological chest diseases.</p>
+        
+        <div class="grid cols-3" style="margin-top: 3rem;">
+            <div class="glass-card stat-box reveal header-card">
+                <div class="stat-value">112k</div>
+                <div class="stat-label">Images Processed</div>
+            </div>
+            <div class="glass-card stat-box reveal header-card">
+                <div class="stat-value">15</div>
+                <div class="stat-label">Training Epochs</div>
+            </div>
+            <div class="glass-card stat-box reveal header-card">
+                <div class="stat-value">0.8414</div>
+                <div class="stat-label">Generalization AUC</div>
+            </div>
+        </div>
+    </header>
+
+    <section class="container" id="metrics">
+        <h2 class="section-title reveal">Training Convergence (NIH Dataset)</h2>
+        <div class="grid cols-2">
+            <div class="glass-card visual-card reveal">
+                <img src="assets/training_curve.png" alt="Training Curve" class="visual-image">
+                <div class="visual-info">
+                    <h3>Validation Loss</h3>
+                    <p>The 15-epoch convergence dynamics mapping the Dual-Attention DenseNet utilizing Weighted Binary Cross Entropy.</p>
+                </div>
+            </div>
+            <div class="glass-card visual-card reveal">
+                <img src="assets/roc_curves.png" alt="ROC Curves" class="visual-image">
+                <div class="visual-info">
+                    <h3>Receiver Operating Characteristic (14 Classes)</h3>
+                    <p>Multiclass ROC curves mapping the True Positive vs False Positive rates for every disease classification group.</p>
+                </div>
+            </div>
+            <div class="glass-card visual-card reveal" style="grid-column: 1 / -1;">
+                <img src="assets/auc_bar.png" alt="AUC Bar Chart" class="visual-image" style="aspect-ratio: 21/9;">
+                <div class="visual-info">
+                    <h3>Area Under Curve (AUC) by Disease</h3>
+                    <p>Comprehensive baseline distribution of predictive accuracy per respiratory disease mapping the strength of the feature extractor.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container" id="generalization">
+        <h2 class="section-title reveal">Zero-Shot Generalization (Stanford CheXpert)</h2>
+        <p class="reveal" style="text-align: center; max-width: 800px; margin: -2rem auto 4rem; color: var(--text-secondary);">
+            To rigorously prove the model learned true pathological features rather than memorizing the NIH hospital scanners, we instantly evaluated the exact same frozen baseline matrix against an unseen <strong>10.7 Gigabyte</strong> patient repository compiled by Stanford.
+        </p>
+
+        <div class="grid cols-2">
+            <div class="glass-card visual-card reveal">
+                <img src="assets/chexpert_generalization_auc.png" alt="CheXpert AUC" class="visual-image">
+                <div class="visual-info">
+                    <h3>Stanford Validation AUC</h3>
+                    <p>The zero-shot evaluation on 5 perfectly overlapping diseases achieved a Mean AUC of 0.8414, acting as definitive statistical evidence of generalizability.</p>
+                </div>
+            </div>
+            <div class="glass-card visual-card reveal">
+                <img src="assets/chexpert_roc_curves.png" alt="CheXpert ROC" class="visual-image">
+                <div class="visual-info">
+                    <h3>Stanford Generalization ROC curves</h3>
+                    <p>ROC Trajectories mapping the network's diagnostic ability on completely alien hospital x-ray scanners.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container" id="explainability">
+        <h2 class="section-title reveal">AI Explainability (Grad-CAM)</h2>
+        <p class="reveal" style="text-align: center; max-width: 800px; margin: -2rem auto 4rem; color: var(--text-secondary);">
+            To bridge the gap between AI and medical practitioners, the model utilizes Gradient-weighted Class Activation Mapping (Grad-CAM) to generate attention heatmaps. This visualizes exactly which anatomical regions the neural network emphasized when diagnosing the pathology.
+        </p>
+
+        <div class="grid cols-2">
+            <div class="glass-card visual-card tall reveal">
+                <img src="assets/sample_predictions.png" alt="Sample Predictions" class="visual-image">
+                <div class="visual-info">
+                    <h3>Ground Truth vs Predictions</h3>
+                    <p>Sample grid of chest X-rays plotting the true pathological labels against the Neural Network's highest confidence probability outputs.</p>
+                </div>
+            </div>
+            <div class="glass-card visual-card tall reveal">
+                <img src="assets/gradcam.png" alt="Grad-CAM Output" class="visual-image">
+                <div class="visual-info">
+                    <h3>Attention Mapping (Heatmaps)</h3>
+                    <p>Red overlays indicate areas of maximum convolutional activation, proving the model correctly attends to lung opacities, heart borders, and pleural fluid.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="container reveal" style="text-align: center; padding: 4rem 0; border-top: 1px solid var(--card-border); margin-top: 4rem;">
+        <p style="color: var(--text-secondary);">Designed intelligently for the NIH Chest X-ray Dataset</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

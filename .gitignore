@@ -1,0 +1,8 @@
+venv/
+nih_images/
+__pycache__/
+*.pth
+.DS_Store
+.idea/
+.vscode/
+run_output.txt

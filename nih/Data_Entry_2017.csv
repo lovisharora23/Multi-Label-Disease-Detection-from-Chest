@@ -1,0 +1,61 @@
+Image Index,Finding Labels
+00000013_008.png,Nodule|Cardiomegaly
+00000007_000.png,Pneumothorax|Edema
+00000013_009.png,Edema|Pleural_Thickening
+00000006_000.png,Cardiomegaly|Pleural_Thickening
+00000005_006.png,Nodule|Pneumonia
+00000005_007.png,Pneumothorax
+00000005_005.png,Cardiomegaly|Pneumothorax
+00000004_000.png,Emphysema
+00000005_004.png,Edema
+00000005_000.png,Cardiomegaly|Infiltration
+00000011_008.png,Atelectasis
+00000005_001.png,Cardiomegaly
+00000005_003.png,Pneumonia|Effusion
+00000005_002.png,No Finding
+00000011_007.png,Infiltration
+00000011_006.png,Hernia
+00000009_000.png,No Finding
+00000011_004.png,Atelectasis
+00000010_000.png,Hernia
+00000011_005.png,Cardiomegaly|Effusion
+00000008_002.png,Edema|Consolidation
+00000001_001.png,Mass|Pneumothorax
+00000011_001.png,Pneumonia
+00000011_000.png,Cardiomegaly|Atelectasis
+00000001_000.png,Hernia|Hernia
+00000008_001.png,Fibrosis
+00000011_002.png,Emphysema
+00000001_002.png,Nodule|Emphysema
+00000011_003.png,Emphysema|Nodule
+00000008_000.png,Pneumothorax|Edema
+00000013_001.png,Pleural_Thickening
+00000003_001.png,No Finding
+00000003_000.png,Mass|Emphysema
+00000013_000.png,Pneumothorax
+00000003_002.png,Pleural_Thickening|Emphysema
+00000013_002.png,Infiltration|Hernia
+00000013_003.png,Emphysema|Fibrosis
+00000003_003.png,Cardiomegaly
+00000003_007.png,Atelectasis|Pneumothorax
+00000013_007.png,Pneumonia
+00000013_006.png,Mass|Consolidation
+00000003_006.png,Atelectasis|Cardiomegaly
+00000013_004.png,Nodule
+00000003_004.png,Fibrosis
+00000013_010.png,No Finding
+00000012_000.png,Pneumothorax|Mass
+00000002_000.png,Edema
+00000003_005.png,Atelectasis|Atelectasis
+00000013_011.png,Atelectasis|Hernia
+00000013_005.png,Pneumonia|Infiltration
+00001341_000.png,Edema|Atelectasis
+00001340_000.png,Atelectasis|Atelectasis
+00001342_000.png,Pneumonia
+00001339_000.png,Pleural_Thickening|Mass
+00001338_000.png,Fibrosis
+00001338_001.png,Nodule
+00001338_003.png,Infiltration
+00001338_002.png,Edema
+00001337_000.png,Atelectasis
+00001336_000.png,Edema|Emphysema
