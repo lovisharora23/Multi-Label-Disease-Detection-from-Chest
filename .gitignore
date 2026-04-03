@@ -1,5 +1,6 @@
 venv/
 nih_images/
+nih/
 __pycache__/
 *.pth
 .DS_Store

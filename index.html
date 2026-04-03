@@ -104,7 +104,38 @@
                 </div>
             </div>
         </div>
+
+        <div class="grid cols-1" style="margin-top: 2rem;">
+            <div class="glass-card visual-card reveal" style="display: flex; flex-direction: column; align-items: center; padding: 2.5rem; text-align: center;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--accent-blue);">Interactive: Dynamic AI Diagnosis</h3>
+                <p style="color: var(--text-secondary); max-width: 600px; margin-bottom: 2rem;">Click below to securely pick a random unseen patient image from the chest X-ray repository and run an instant inference via the Dual Attention DenseNet architecture in the background.</p>
+                
+                <button id="generateBtn" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; border: none; padding: 1rem 2rem; font-size: 1.1rem; font-weight: 600; border-radius: 999px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.4); margin-bottom: 2.5rem;">
+                    Generate Random Grad-CAM
+                </button>
+                
+                <div id="loadingIndicator" style="display: none; align-items: center; gap: 0.5rem; color: var(--accent-blue); margin-bottom: 2rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                    <span>Running Neural Network Inference...</span>
+                </div>
+
+                <div id="dynamicResult" style="display: none; width: 100%; max-width: 500px;">
+                    <img id="dynamicImage" src="" alt="Dynamically Generated Grad-CAM" class="visual-image" style="border-radius: 12px; border: 1px solid var(--card-border);">
+                    <div style="margin-top: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid var(--card-border);">
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>True Pathologies:</strong> <span id="trueLabels" style="color: white;"></span></p>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary);"><strong>AI Prediction:</strong> <span id="predLabels" style="color: var(--accent-blue); font-weight: bold;"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
+
+    <style>
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        #generateBtn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(56, 189, 248, 0.5); }
+        #generateBtn:active { transform: translateY(0); }
+        #generateBtn:disabled { opacity: 0.7; cursor: not-allowed; transform: translateY(0); }
+    </style>
 
     <footer class="container reveal" style="text-align: center; padding: 4rem 0; border-top: 1px solid var(--card-border); margin-top: 4rem;">
         <p style="color: var(--text-secondary);">Designed intelligently for the NIH Chest X-ray Dataset</p>
