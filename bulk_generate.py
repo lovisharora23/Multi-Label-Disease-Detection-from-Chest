@@ -1,7 +1,7 @@
 import os
 import random
 import io
-import base64
+import json
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
@@ -10,15 +10,8 @@ from pytorch_grad_cam.utils.image import show_cam_on_image
 from PIL import Image
 import numpy as np
 import pandas as pd
-from flask import Flask, jsonify, send_from_directory, request
-from flask_cors import CORS
 
-app = Flask(__name__, static_folder='.', static_url_path='/')
-CORS(app)
-
-print("Loading dependencies...")
 device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
-print(f"Using device: {device}")
 
 # --- Dual Attention Architecture ---
 class ChannelAttention(nn.Module):
@@ -67,9 +60,7 @@ class DualAttentionBlock(nn.Module):
 class AttentionDenseNet(nn.Module):
     def __init__(self, num_classes, pretrained=False):
         super().__init__()
-        # Ensure we have weights_only=False inside DenseNet creation not here
-        weights = None
-        densenet = models.densenet121(weights=weights)
+        densenet = models.densenet121(weights=None)
         self.features = densenet.features
         self.attention = DualAttentionBlock(in_channels=1024, reduction=16)
         self.gap        = nn.AdaptiveAvgPool2d(1)
@@ -84,26 +75,17 @@ class AttentionDenseNet(nn.Module):
         out       = self.classifier(self.dropout(flat))
         return out
 
-
 all_labels = ['Atelectasis', 'Cardiomegaly', 'Consolidation', 'Edema', 'Effusion', 
               'Emphysema', 'Fibrosis', 'Hernia', 'Infiltration', 'Mass', 'Nodule', 
               'Pleural_Thickening', 'Pneumonia', 'Pneumothorax']
 
-print("Initializing Neural Network...")
+print("Loading model...")
 model = AttentionDenseNet(num_classes=len(all_labels), pretrained=False).to(device)
-
 checkpoint_path = os.path.join('nih', 'best_attention_model.pth')
-print(f"Loading weights from {checkpoint_path}...")
-try:
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    model.load_state_dict(checkpoint['model_state'])
-    print(f"Model loaded successfully (Val Loss: {checkpoint['val_loss']:.4f})")
-except Exception as e:
-    print(f"Failed to load model weights: {e}")
-
+checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+model.load_state_dict(checkpoint['model_state'])
 model.eval()
 
-# Initialize Grad-CAM
 target_layer = [model.features[-1]]
 cam = GradCAM(model=model, target_layers=target_layer)
 
@@ -113,78 +95,58 @@ transform_val = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-print("Loading dataset catalog...")
+print("Loading dataset metadata...")
 extract_dir = './nih_images'
 dataset_source_dir = '/Users/lovisharora394/.cache/kagglehub/datasets/nih-chest-xrays/data/versions/3'
 csv_path = os.path.join(dataset_source_dir, 'Data_Entry_2017.csv')
 
-available_images = []
-data = None
-try:
-    data = pd.read_csv(csv_path)
-    available_images = list(set(os.listdir(extract_dir)))
-    data = data[data["Image Index"].isin(available_images)].reset_index(drop=True)
-    print(f"Loaded {len(data)} image metadata records.")
-except Exception as e:
-    print(f"Failed to load metadata CSV: {e}")
+df = pd.read_csv(csv_path)
+available_images = list(set(os.listdir(extract_dir)))
+df = df[df["Image Index"].isin(available_images)].reset_index(drop=True)
 
+# Generate 20 samples
+samples = []
+out_dir = "assets/demo"
+os.makedirs(out_dir, exist_ok=True)
 
-@app.route('/')
-def serve_index():
-    return send_from_directory('.', 'index.html')
+print("Pre-generating static Grad-CAM cache...")
+for i in range(20):
+    idx = random.randint(0, len(df) - 1)
+    row = df.iloc[idx]
+    img_name = row['Image Index']
+    true_labels_str = row['Finding Labels']
+    
+    img_path = os.path.join(extract_dir, img_name)
+    image = Image.open(img_path).convert("RGB")
+    input_tensor = transform_val(image).unsqueeze(0).to(device)
+    
+    with torch.no_grad():
+        output = model(input_tensor)
+        probs = torch.sigmoid(output).cpu().numpy()[0]
+    
+    top_pred = [all_labels[j] for j in range(len(probs)) if probs[j] > 0.5]
+    if not top_pred:
+        top_pred = ["No Finding (Low Confidence)"]
+        
+    grayscale_cam = cam(input_tensor=input_tensor)[0]
+    
+    img_np = input_tensor[0].cpu().permute(1, 2, 0).numpy()
+    img_np = img_np * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
+    img_np = np.clip(img_np, 0, 1).astype(np.float32)
 
-@app.route('/api/random_gradcam', methods=['POST'])
-def generate_random_gradcam():
-    try:
-        if data is None or len(data) == 0:
-            return jsonify({"error": "Dataset not loaded, cannot pick a random image."}), 500
-            
-        idx = random.randint(0, len(data) - 1)
-        row = data.iloc[idx]
-        img_name = row['Image Index']
-        true_labels_str = row['Finding Labels']
-        
-        img_path = os.path.join(extract_dir, img_name)
-        
-        image = Image.open(img_path).convert("RGB")
-        input_tensor = transform_val(image).unsqueeze(0).to(device)
-        
-        # Inference
-        with torch.no_grad():
-            output = model(input_tensor)
-            probs = torch.sigmoid(output).cpu().numpy()[0]
-        
-        # Determine predicted classes > 0.5
-        top_pred = [all_labels[j] for j in range(len(probs)) if probs[j] > 0.5]
-        if not top_pred:
-            top_pred = ["No Finding (Low Confidence)"]
-            
-        # Grad-CAM
-        grayscale_cam = cam(input_tensor=input_tensor)[0]
-        
-        img_np = input_tensor[0].cpu().permute(1, 2, 0).numpy()
-        img_np = img_np * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
-        img_np = np.clip(img_np, 0, 1).astype(np.float32)
+    visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
+    viz_image = Image.fromarray(visualization)
+    
+    save_path = os.path.join(out_dir, f"patient_{i}.png")
+    viz_image.save(save_path, format="PNG")
+    
+    samples.append({
+        "image": save_path,
+        "true_labels": true_labels_str.replace("|", ", "),
+        "predicted_labels": ", ".join(top_pred)
+    })
+    print(f"Generated {i+1}/20")
 
-        visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
-        
-        # Base64 enc
-        viz_image = Image.fromarray(visualization)
-        buffered = io.BytesIO()
-        viz_image.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        
-        response_data = {
-            "image": "data:image/png;base64," + img_str,
-            "true_labels": true_labels_str.replace("|", ", "),
-            "predicted_labels": ", ".join(top_pred)
-        }
-        
-        return jsonify(response_data)
-
-    except Exception as e:
-        print(f"Error during Grad-CAM generation: {e}")
-        return jsonify({"error": str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=False)
+with open('demo_data.json', 'w') as f:
+    json.dump(samples, f)
+print("Static pre-generation complete. Saved to demo_data.json")
