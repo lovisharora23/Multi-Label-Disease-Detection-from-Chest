@@ -6,6 +6,6 @@ numpy
 pandas
 scikit-learn
 tqdm
-pytorch-grad-cam
+grad-cam
 matplotlib
 kagglehub
