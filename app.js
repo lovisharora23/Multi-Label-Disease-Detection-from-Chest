@@ -112,8 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tensor = await preprocess(img);
                 const { probs, heatmap } = await runInference(tensor);
                 
-                displayResults(probs);
-                renderHeatmap(heatmap);
+                displayResults(probs, heatmap);
                 
                 aiLoading.style.display = 'none';
                 aiResults.style.display = 'block';
