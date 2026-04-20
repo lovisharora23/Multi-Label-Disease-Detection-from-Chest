@@ -169,15 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ctx = heatmapCanvas.getContext('2d');
         ctx.clearRect(0, 0, 224, 224);
 
-        if (!heatmapToggle.checked) return;
-
-    function renderHeatmap(data, probItems) {
-        heatmapCanvas.width = 224;
-        heatmapCanvas.height = 224;
-        const ctx = heatmapCanvas.getContext('2d');
-        ctx.clearRect(0, 0, 224, 224);
-
-        if (!heatmapToggle.checked) return;
+        if (!heatmapToggle.checked || !probItems || probItems.length === 0) return;
 
         // 1. Draw Surgical Bounding Boxes (Tighter 85% threshold)
         probItems.forEach((item, index) => {
@@ -187,19 +179,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const w = (x2 - x1) || 30;
                 const h = (y2 - y1) || 30;
 
-                // Glowing Sharp Box
-                ctx.strokeStyle = '#ffff00';
+                // Glowing Sharp Box (Using Yellow/Amber for clinical look)
+                ctx.strokeStyle = '#fbc02d'; 
                 ctx.lineWidth = 3;
                 ctx.setLineDash([]);
                 ctx.strokeRect(x1, y1, w, h);
                 
                 // Outer subtle glow
-                ctx.strokeStyle = 'rgba(255, 255, 0, 0.3)';
+                ctx.strokeStyle = 'rgba(251, 192, 45, 0.3)';
                 ctx.lineWidth = 6;
                 ctx.strokeRect(x1-2, y1-2, w+4, h+4);
 
                 // Label Tag
-                ctx.fillStyle = '#ffff00';
+                ctx.fillStyle = '#fbc02d';
                 const labelText = `${index + 1} - ${item.label}`;
                 ctx.font = 'bold 11px Inter';
                 const textWidth = ctx.measureText(labelText).width;
@@ -214,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateBBox(data, thresh) {
         const size = 7;
         const max = Math.max(...data);
+        if (max === 0) return null;
         const limit = max * thresh;
         
         let minR = size, maxR = -1, minC = size, maxC = -1;
@@ -228,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        // Tighter bounds (less expansion)
         if (found) return [Math.max(0, minC), Math.max(0, minR), Math.min(7, maxC+1), Math.min(7, maxR+1)];
         return null;
     }
@@ -247,7 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filtered.length > 0) {
             filtered.forEach(item => {
                 const percentage = (item.prob * 100).toFixed(1);
-                const color = item.prob > 0.5 ? '#ff4b4b' : '#ff9f43';
+                // Professional Diagnostic Colors (Amber tones)
+                const color = item.prob > 0.5 ? '#fbc02d' : '#ffcc80'; 
                 
                 const row = document.createElement('div');
                 row.className = 'finding-row';
