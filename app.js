@@ -163,19 +163,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return { probs, heatmap };
     }
 
-    function renderHeatmap(data) {
-        const size = Math.sqrt(data.length); // Should be 7
+    function renderHeatmap(data, probItems) {
         heatmapCanvas.width = 224;
         heatmapCanvas.height = 224;
         const ctx = heatmapCanvas.getContext('2d');
         ctx.clearRect(0, 0, 224, 224);
 
-        // Normalize attention values
-        const max = Math.max(...data);
-        const min = Math.min(...data);
-        const range = max - min || 1;
+        if (!heatmapToggle.checked) return;
 
-        // Create small off-screen canvas for 7x7 map
+        // 1. Draw soft heatmap overlay
+        const size = 7;
+        const max = Math.max(...data);
+        const range = max || 1;
         const offCanvas = document.createElement('canvas');
         offCanvas.width = size;
         offCanvas.height = size;
@@ -183,29 +182,72 @@ document.addEventListener('DOMContentLoaded', () => {
         const offData = offCtx.createImageData(size, size);
 
         for (let i = 0; i < data.length; i++) {
-            const val = (data[i] - min) / range;
+            const val = data[i] / range;
             const idx = i * 4;
-            // Draw into offscreen canvas (Red channel based on attention)
-            offData.data[idx] = 255;     // R
-            offData.data[idx + 1] = 0;   // G
-            offData.data[idx + 2] = 0;   // B
-            offData.data[idx + 3] = val * 180; // A (Max opacity 180/255)
+            offData.data[idx] = 255; offData.data[idx + 1] = 255; offData.data[idx + 2] = 0; // Yellow-ish
+            offData.data[idx + 3] = val * 100; 
         }
         offCtx.putImageData(offData, 0, 0);
-
-        // Draw scaled and smoothed onto main heatmap canvas
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(offCanvas, 0, 0, size, size, 0, 0, 224, 224);
+
+        // 2. Draw Bounding Boxes for top findings
+        probItems.forEach((item, index) => {
+            const bbox = calculateBBox(data, 0.6); // Threshold 60% of max
+            if (bbox) {
+                const [x1, y1, x2, y2] = bbox.map(v => (v * 224) / 7);
+                const w = (x2 - x1) || 30;
+                const h = (y2 - y1) || 30;
+
+                ctx.strokeStyle = '#ffff00';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x1, y1, w, h);
+
+                // Draw Label Tag
+                ctx.fillStyle = '#ffff00';
+                const labelText = `${index + 1} - ${item.label}`;
+                ctx.font = 'bold 10px Inter';
+                const textWidth = ctx.measureText(labelText).width;
+                ctx.fillRect(x1, y1 - 15, textWidth + 10, 15);
+                
+                ctx.fillStyle = '#000';
+                ctx.fillText(labelText, x1 + 5, y1 - 4);
+            }
+        });
     }
 
-    function displayResults(probs) {
+    function calculateBBox(data, thresh) {
+        const size = 7;
+        const max = Math.max(...data);
+        const limit = max * thresh;
+        
+        let minR = size, maxR = -1, minC = size, maxC = -1;
+        let found = false;
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (data[r * size + c] >= limit) {
+                    minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+                    minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+                    found = true;
+                }
+            }
+        }
+        // Expand box slightly for better visual
+        if (found) return [Math.max(0, minC-0.5), Math.max(0, minR-0.5), Math.min(7, maxC+1.5), Math.min(7, maxR+1.5)];
+        return null;
+    }
+
+    function displayResults(probs, heatmap) {
         findingBars.innerHTML = '';
         const sorted = probs
             .map((p, i) => ({ label: LABELS[i], prob: p }))
             .sort((a, b) => b.prob - a.prob);
 
         const filtered = sorted.filter(item => item.prob > 0.25).slice(0, 3);
+        
+        // Trigger heatmap and BBox rendering
+        renderHeatmap(heatmap, filtered);
 
         if (filtered.length > 0) {
             filtered.forEach(item => {
