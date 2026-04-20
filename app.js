@@ -156,10 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .map((p, i) => ({ label: LABELS[i], prob: p }))
             .sort((a, b) => b.prob - a.prob);
 
-        sorted.forEach(item => {
-            if (item.prob > 0.10) { // Show all > 10%
+        const filtered = sorted.filter(item => item.prob > 0.25).slice(0, 3);
+
+        if (filtered.length > 0) {
+            filtered.forEach(item => {
                 const percentage = (item.prob * 100).toFixed(1);
-                const color = item.prob > 0.5 ? '#ff4b4b' : (item.prob > 0.2 ? '#ff9f43' : '#38bdf8');
+                const color = item.prob > 0.5 ? '#ff4b4b' : '#ff9f43';
                 
                 const row = document.createElement('div');
                 row.className = 'finding-row';
@@ -176,13 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Animate progress bar
                 setTimeout(() => {
-                    row.querySelector('.progress-fill').style.width = `${percentage}%`;
+                    const fill = row.querySelector('.progress-fill');
+                    if (fill) fill.style.width = `${percentage}%`;
                 }, 100);
-            }
-        });
-
-        if (findingBars.innerHTML === '') {
-            findingBars.innerHTML = '<div style="color: #00c853;">No significant findings detected.</div>';
+            });
+        } else {
+            findingBars.innerHTML = `
+                <div style="text-align: center; padding: 2rem; background: rgba(0, 200, 83, 0.1); border-radius: 12px; border: 1px solid rgba(0, 200, 83, 0.2);">
+                    <div style="color: #00c853; font-size: 1.5rem; margin-bottom: 0.5rem;">✔ No Significant Pathologies</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Model confidence is below diagnostic threshold (< 25%). Case appears healthy.</div>
+                </div>
+            `;
         }
     }
 });
