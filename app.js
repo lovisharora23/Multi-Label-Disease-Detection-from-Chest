@@ -171,47 +171,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!heatmapToggle.checked) return;
 
-        // 1. Draw soft heatmap overlay
-        const size = 7;
-        const max = Math.max(...data);
-        const range = max || 1;
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = size;
-        offCanvas.height = size;
-        const offCtx = offCanvas.getContext('2d');
-        const offData = offCtx.createImageData(size, size);
+    function renderHeatmap(data, probItems) {
+        heatmapCanvas.width = 224;
+        heatmapCanvas.height = 224;
+        const ctx = heatmapCanvas.getContext('2d');
+        ctx.clearRect(0, 0, 224, 224);
 
-        for (let i = 0; i < data.length; i++) {
-            const val = data[i] / range;
-            const idx = i * 4;
-            offData.data[idx] = 255; offData.data[idx + 1] = 255; offData.data[idx + 2] = 0; // Yellow-ish
-            offData.data[idx + 3] = val * 100; 
-        }
-        offCtx.putImageData(offData, 0, 0);
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(offCanvas, 0, 0, size, size, 0, 0, 224, 224);
+        if (!heatmapToggle.checked) return;
 
-        // 2. Draw Bounding Boxes for top findings
+        // 1. Draw Surgical Bounding Boxes (Tighter 85% threshold)
         probItems.forEach((item, index) => {
-            const bbox = calculateBBox(data, 0.6); // Threshold 60% of max
+            const bbox = calculateBBox(data, 0.85); // High threshold for "specific part"
             if (bbox) {
                 const [x1, y1, x2, y2] = bbox.map(v => (v * 224) / 7);
                 const w = (x2 - x1) || 30;
                 const h = (y2 - y1) || 30;
 
+                // Glowing Sharp Box
                 ctx.strokeStyle = '#ffff00';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
+                ctx.setLineDash([]);
                 ctx.strokeRect(x1, y1, w, h);
+                
+                // Outer subtle glow
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.3)';
+                ctx.lineWidth = 6;
+                ctx.strokeRect(x1-2, y1-2, w+4, h+4);
 
-                // Draw Label Tag
+                // Label Tag
                 ctx.fillStyle = '#ffff00';
                 const labelText = `${index + 1} - ${item.label}`;
-                ctx.font = 'bold 10px Inter';
+                ctx.font = 'bold 11px Inter';
                 const textWidth = ctx.measureText(labelText).width;
-                ctx.fillRect(x1, y1 - 15, textWidth + 10, 15);
+                ctx.fillRect(x1, y1 - 18, textWidth + 10, 18);
                 
                 ctx.fillStyle = '#000';
-                ctx.fillText(labelText, x1 + 5, y1 - 4);
+                ctx.fillText(labelText, x1 + 5, y1 - 5);
             }
         });
     }
@@ -233,8 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        // Expand box slightly for better visual
-        if (found) return [Math.max(0, minC-0.5), Math.max(0, minR-0.5), Math.min(7, maxC+1.5), Math.min(7, maxR+1.5)];
+        // Tighter bounds (less expansion)
+        if (found) return [Math.max(0, minC), Math.max(0, minR), Math.min(7, maxC+1), Math.min(7, maxR+1)];
         return null;
     }
 
