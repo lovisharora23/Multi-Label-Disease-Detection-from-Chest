@@ -92,31 +92,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiResults = document.getElementById('aiResults');
     const previewImage = document.getElementById('previewImage');
     const findingBars = document.getElementById('findingBars');
+    const heatmapCanvas = document.getElementById('heatmapCanvas');
+    const heatmapToggle = document.getElementById('heatmapToggle');
 
     if (xrayUpload) {
         xrayUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            // Show Preview & Loading
             previewImage.src = URL.createObjectURL(file);
             aiLoading.style.display = 'flex';
             aiResults.style.display = 'none';
             
             await initModel();
             
-            // Wait for image to load to get dimensions
             const img = new Image();
             img.src = previewImage.src;
             img.onload = async () => {
                 const tensor = await preprocess(img);
-                const results = await runInference(tensor);
-                displayResults(results);
+                const { probs, heatmap } = await runInference(tensor);
+                
+                displayResults(probs);
+                renderHeatmap(heatmap);
                 
                 aiLoading.style.display = 'none';
                 aiResults.style.display = 'block';
+                
+                // Toggle heatmap visibility
+                heatmapCanvas.style.display = heatmapToggle.checked ? 'block' : 'none';
+                
                 aiResults.scrollIntoView({ behavior: 'smooth' });
             };
+        });
+    }
+
+    if (heatmapToggle) {
+        heatmapToggle.addEventListener('change', () => {
+            heatmapCanvas.style.display = heatmapToggle.checked ? 'block' : 'none';
         });
     }
 
@@ -130,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const imageData = ctx.getImageData(0, 0, 224, 224).data;
         const redArr = [], greenArr = [], blueArr = [];
 
-        // Normalization (ImageNet: Mean [0.485, 0.456, 0.406], Std [0.229, 0.224, 0.225])
         for (let i = 0; i < imageData.length; i += 4) {
             redArr.push((imageData[i] / 255 - 0.485) / 0.229);
             greenArr.push((imageData[i+1] / 255 - 0.456) / 0.224);
@@ -144,10 +155,48 @@ document.addEventListener('DOMContentLoaded', () => {
     async function runInference(inputTensor) {
         const feeds = { input: inputTensor };
         const results = await session.run(feeds);
-        const output = results.output.data;
         
-        // Sigmoid activation
-        return Array.from(output).map(v => 1 / (1 + Math.exp(-v)));
+        const prediction = results.prediction.data;
+        const heatmap = results.heatmap.data; // 1x1x7x7
+        
+        const probs = Array.from(prediction).map(v => 1 / (1 + Math.exp(-v)));
+        return { probs, heatmap };
+    }
+
+    function renderHeatmap(data) {
+        const size = Math.sqrt(data.length); // Should be 7
+        heatmapCanvas.width = 224;
+        heatmapCanvas.height = 224;
+        const ctx = heatmapCanvas.getContext('2d');
+        ctx.clearRect(0, 0, 224, 224);
+
+        // Normalize attention values
+        const max = Math.max(...data);
+        const min = Math.min(...data);
+        const range = max - min || 1;
+
+        // Create small off-screen canvas for 7x7 map
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = size;
+        offCanvas.height = size;
+        const offCtx = offCanvas.getContext('2d');
+        const offData = offCtx.createImageData(size, size);
+
+        for (let i = 0; i < data.length; i++) {
+            const val = (data[i] - min) / range;
+            const idx = i * 4;
+            // Draw into offscreen canvas (Red channel based on attention)
+            offData.data[idx] = 255;     // R
+            offData.data[idx + 1] = 0;   // G
+            offData.data[idx + 2] = 0;   // B
+            offData.data[idx + 3] = val * 180; // A (Max opacity 180/255)
+        }
+        offCtx.putImageData(offData, 0, 0);
+
+        // Draw scaled and smoothed onto main heatmap canvas
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(offCanvas, 0, 0, size, size, 0, 0, 224, 224);
     }
 
     function displayResults(probs) {
