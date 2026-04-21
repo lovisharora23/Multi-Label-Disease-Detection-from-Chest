@@ -250,24 +250,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const filtered = sorted.filter(item => item.prob > 0.25).slice(0, 3);
         
-        // Trigger heatmap and BBox rendering
+        // Populate the AI Prediction Summary Text (Same style as random demo)
+        const uploadPredText = document.getElementById('uploadPredText');
+        const predSummary = filtered.length > 0 
+            ? filtered.map(item => item.label).join(', ') 
+            : 'No Significant Findings (Low Confidence)';
+        
+        if (uploadPredText) {
+            uploadPredText.textContent = predSummary;
+        }
+
+        // Trigger heatmap rendering
         renderHeatmap(heatmap, filtered);
 
         if (filtered.length > 0) {
             filtered.forEach(item => {
                 const percentage = (item.prob * 100).toFixed(1);
-                // Professional Diagnostic Colors (Amber tones)
-                const color = item.prob > 0.5 ? '#fbc02d' : '#ffcc80'; 
+                // Professional Diagnostic Colors (Amber/Yellow)
+                const color = item.prob > 0.5 ? '#fbc02d' : '#fff176'; 
                 
                 const row = document.createElement('div');
                 row.className = 'finding-row';
                 row.innerHTML = `
                     <div class="finding-label">
-                        <span>${item.label}</span>
-                        <span>${percentage}%</span>
+                        <span style="font-weight: 600; color: #fff;">${item.label}</span>
+                        <span style="color: ${color}; font-weight: 900;">${percentage}%</span>
                     </div>
-                    <div class="progress-bg">
-                        <div class="progress-fill" style="width: 0%; background: ${color};"></div>
+                    <div class="progress-bg" style="background: rgba(255,255,255,0.08); height: 10px;">
+                        <div class="progress-fill" style="width: 0%; background: ${color}; box-shadow: 0 0 10px ${color}44;"></div>
                     </div>
                 `;
                 findingBars.appendChild(row);
@@ -280,9 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } else {
             findingBars.innerHTML = `
-                <div style="text-align: center; padding: 2rem; background: rgba(0, 200, 83, 0.1); border-radius: 12px; border: 1px solid rgba(0, 200, 83, 0.2);">
-                    <div style="color: #00c853; font-size: 1.5rem; margin-bottom: 0.5rem;">✔ No Significant Pathologies</div>
-                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Model confidence is below diagnostic threshold (< 25%). Case appears healthy.</div>
+                <div style="text-align: center; padding: 2rem; background: rgba(0, 200, 83, 0.05); border-radius: 20px; border: 1px dashed rgba(0, 200, 83, 0.3);">
+                    <div style="color: #00c853; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">✔ Diagnostic Clear</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Confidence scores are below 25% for all pathologies. Patient appears clinically healthy.</div>
                 </div>
             `;
         }
