@@ -163,50 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderHeatmap(data, probItems) {
+        // Cleaned up for a minimalist results-only display
         heatmapCanvas.width = 224;
         heatmapCanvas.height = 224;
         const ctx = heatmapCanvas.getContext('2d');
         ctx.clearRect(0, 0, 224, 224);
-
-        if (!heatmapToggle.checked || !probItems || probItems.length === 0) return;
-
-        // 1. Create a 7x7 tiny heatmap with the actual activations
-        const size = 7;
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = size;
-        offCanvas.height = size;
-        const offCtx = offCanvas.getContext('2d');
-        const offData = offCtx.createImageData(size, size);
-
-        const max = Math.max(...data) || 1;
-
-        for (let i = 0; i < data.length; i++) {
-            const val = data[i] / max;
-            const rgb = jetColorMap(val);
-            const idx = i * 4;
-            offData.data[idx] = rgb[0];
-            offData.data[idx+1] = rgb[1];
-            offData.data[idx+2] = rgb[2];
-            // Map opacity to power of activation for "liquid" core effect
-            offData.data[idx+3] = Math.pow(val, 0.7) * 200; 
-        }
-        offCtx.putImageData(offData, 0, 0);
-
-        // 2. High-Resolution Liquid Blending
-        ctx.save();
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
         
-        // Apply double-pass smoothing for the 'liquid' look
-        ctx.filter = 'blur(12px)'; 
-        ctx.globalAlpha = 0.7;
-        ctx.drawImage(offCanvas, 0, 0, size, size, -10, -10, 244, 244);
-        
-        // Add a secondary subtle glow to the core
-        ctx.filter = 'blur(4px)';
-        ctx.globalAlpha = 0.4;
-        ctx.drawImage(offCanvas, 0, 0, size, size, 0, 0, 224, 224);
-        ctx.restore();
+        // As per user request, we are removing the visual highlighting
+        // and only showing the diagnostic percentages below the image.
     }
 
     // Professional Jet (Rainbow) Colormap
