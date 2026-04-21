@@ -93,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewImage = document.getElementById('previewImage');
     const findingBars = document.getElementById('findingBars');
     const heatmapCanvas = document.getElementById('heatmapCanvas');
-    const heatmapToggle = document.getElementById('heatmapToggle');
 
     if (xrayUpload) {
         xrayUpload.addEventListener('change', async (e) => {
