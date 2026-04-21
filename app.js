@@ -170,39 +170,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!heatmapToggle.checked || !probItems || probItems.length === 0) return;
 
-        // 1. Draw Surgical Bounding Boxes (Tighter 85% threshold)
-        probItems.forEach((item, index) => {
-            const bbox = calculateBBox(data, 0.85); // High threshold for "specific part"
-            if (bbox) {
-                const [x1, y1, x2, y2] = bbox.map(v => (v * 224) / 7);
-                const w = (x2 - x1) || 30;
-                const h = (y2 - y1) || 30;
+        // 1. Create a 7x7 tiny heatmap
+        const size = 7;
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = size;
+        offCanvas.height = size;
+        const offCtx = offCanvas.getContext('2d');
+        const offData = offCtx.createImageData(size, size);
 
-                // Glowing Sharp Box (Using Yellow/Amber for clinical look)
-                ctx.strokeStyle = '#fbc02d'; 
-                ctx.lineWidth = 3;
-                ctx.setLineDash([]);
-                ctx.strokeRect(x1, y1, w, h);
-                
-                // Outer subtle glow
-                ctx.strokeStyle = 'rgba(251, 192, 45, 0.3)';
-                ctx.lineWidth = 6;
-                ctx.strokeRect(x1-2, y1-2, w+4, h+4);
+        const max = Math.max(...data) || 1;
 
-                // Label Tag
-                ctx.fillStyle = '#fbc02d';
-                const labelText = `${index + 1} - ${item.label}`;
-                ctx.font = 'bold 11px Inter';
-                const textWidth = ctx.measureText(labelText).width;
-                ctx.fillRect(x1, y1 - 18, textWidth + 10, 18);
-                
-                ctx.fillStyle = '#000';
-                ctx.fillText(labelText, x1 + 5, y1 - 5);
-            }
-        });
+        for (let i = 0; i < data.length; i++) {
+            const val = data[i] / max;
+            const rgb = jetColorMap(val);
+            const idx = i * 4;
+            offData.data[idx] = rgb[0];
+            offData.data[idx+1] = rgb[1];
+            offData.data[idx+2] = rgb[2];
+            offData.data[idx+3] = val * 180; // Opacity based on activation
+        }
+        offCtx.putImageData(offData, 0, 0);
+
+        // 2. Scale up to 224x224 with smoothing
+        ctx.imageSmoothingEnabled = true;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.drawImage(offCanvas, 0, 0, size, size, 0, 0, 224, 224);
+    }
+
+    // Professional Jet (Rainbow) Colormap
+    function jetColorMap(v) {
+        const r = Math.max(0, Math.min(255, Math.floor(255 * Math.min(4 * v - 1.5, -4 * v + 4.5))));
+        const g = Math.max(0, Math.min(255, Math.floor(255 * Math.min(4 * v - 0.5, -4 * v + 3.5))));
+        const b = Math.max(0, Math.min(255, Math.floor(255 * Math.min(4 * v + 0.5, -4 * v + 2.5))));
+        return [r, g, b];
     }
 
     function calculateBBox(data, thresh) {
+        // Kept for logic if needed, but not used for drawing as per user request
         const size = 7;
         const max = Math.max(...data);
         if (max === 0) return null;
