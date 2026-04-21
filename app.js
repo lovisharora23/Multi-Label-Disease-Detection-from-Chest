@@ -170,32 +170,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!heatmapToggle.checked || !probItems || probItems.length === 0) return;
 
-        // 1. Create a 7x7 tiny heatmap
-        const size = 7;
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = size;
-        offCanvas.height = size;
-        const offCtx = offCanvas.getContext('2d');
-        const offData = offCtx.createImageData(size, size);
+        // 1. Draw Surgical Bounding Box for the Top Finding
+        const bbox = calculateBBox(data, 0.85); // High precision threshold
+        if (bbox) {
+            const [x1, y1, x2, y2] = bbox.map(v => (v * 224) / 7);
+            const w = (x2 - x1) || 40;
+            const h = (y2 - y1) || 40;
 
-        const max = Math.max(...data) || 1;
+            // Diagnostic Box
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x1, y1, w, h);
+            
+            // Label for precision
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 12px Inter';
+            ctx.fillRect(x1, y1 - 20, 80, 20);
+            ctx.fillStyle = '#000';
+            ctx.fillText("TARGET ZONE", x1 + 5, y1 - 5);
 
-        for (let i = 0; i < data.length; i++) {
-            const val = data[i] / max;
-            const rgb = jetColorMap(val);
-            const idx = i * 4;
-            offData.data[idx] = rgb[0];
-            offData.data[idx+1] = rgb[1];
-            offData.data[idx+2] = rgb[2];
-            offData.data[idx+3] = val * 180; // Opacity based on activation
+            // 2. Add localized "Intensity Glow" ONLY inside the box
+            const size = 7;
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = size;
+            offCanvas.height = size;
+            const offCtx = offCanvas.getContext('2d');
+            const offData = offCtx.createImageData(size, size);
+            const max = Math.max(...data) || 1;
+
+            for (let i = 0; i < data.length; i++) {
+                const val = data[i] / max;
+                if (val > 0.7) { // Only show glow for the absolute peaks
+                    offData.data[i*4] = 255; offData.data[i*4+1] = 0; offData.data[i*4+2] = 0; // Target Red
+                    offData.data[i*4+3] = val * 150;
+                }
+            }
+            offCtx.putImageData(offData, 0, 0);
+            ctx.globalAlpha = 0.5;
+            ctx.drawImage(offCanvas, 0, 0, size, size, 0, 0, 224, 224);
         }
-        offCtx.putImageData(offData, 0, 0);
-
-        // 2. Scale up to 224x224 with smoothing
-        ctx.imageSmoothingEnabled = true;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.drawImage(offCanvas, 0, 0, size, size, 0, 0, 224, 224);
     }
 
     // Professional Jet (Rainbow) Colormap
